@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>学术人格诊断测试 | LBTI</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 16px;
+      color: #333;
+    }
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+      position: relative;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    .screen {
+      display: none;
+      padding: 32px 24px;
+      animation: fadeIn 0.5s ease;
+    }
+    .screen.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Intro */
+    .intro-screen { text-align: center; }
+    .intro-screen .emoji { font-size: 64px; margin-bottom: 16px; display: block; }
+    .intro-screen h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .intro-screen .subtitle { font-size: 14px; color: #888; margin-bottom: 24px; }
+    .intro-screen .desc {
+      font-size: 15px;
+      color: #555;
+      line-height: 1.8;
+      margin-bottom: 28px;
+      text-align: left;
+      background: #f8f9ff;
+      padding: 20px;
+      border-radius: 16px;
+    }
+    .type-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 32px;
+      justify-content: center;
+    }
+    .type-tag {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-outline {
+      background: #fff;
+      color: #667eea;
+      border: 2px solid #667eea;
+      box-shadow: none;
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+      margin-top: 12px;
+    }
+    .tip { font-size: 13px; color: #888; margin-top: 12px; text-align: center; }
+
+    /* Quiz */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      background: #eee;
+      border-radius: 4px;
+      margin-right: 12px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    .progress-text { font-size: 13px; color: #888; font-weight: 600; min-width: 42px; text-align: right; }
+    .question-text { font-size: 20px; font-weight: 700; color: #333; margin-bottom: 28px; line-height: 1.5; }
+    .options { display: flex; flex-direction: column; gap: 12px; }
+    .option {
+      padding: 16px 18px;
+      border: 2px solid #e8e8e8;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #444;
+      background: #fff;
+      text-align: left;
+    }
+    .option:hover, .option:active { border-color: #667eea; background: #f8f9ff; transform: translateX(4px); }
+
+    /* Loading */
+    .loading-screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      flex-direction: column;
+    }
+    .loading-screen.active { display: flex; }
+    .loading-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 32px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+    }
+    .loading-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .loading-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+    .loading-text {
+      font-size: 16px;
+      color: #333;
+      font-weight: 600;
+      min-height: 24px;
+      transition: opacity 0.2s;
+    }
+
+    /* Result */
+    .result-screen { padding: 0; }
+    #capture-area {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 32px 24px;
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #capture-area::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 180px;
+      height: 180px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+    #capture-area::after {
+      content: '';
+      position: absolute;
+      bottom: -40px;
+      left: -40px;
+      width: 140px;
+      height: 140px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+    .result-code {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: 5px;
+      margin-bottom: 4px;
+      text-shadow: 0 3px 12px rgba(0,0,0,0.25);
+      position: relative;
+      z-index: 1;
+    }
+    .result-name { font-size: 24px; font-weight: 700; margin-bottom: 2px; position: relative; z-index: 1; }
+    .result-title { font-size: 16px; opacity: 0.92; margin-bottom: 12px; position: relative; z-index: 1; }
+
+    /* Avatar - Upper body character */
+    .avatar-wrap {
+      width: 180px;
+      height: 200px;
+      margin: 0 auto 16px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .avatar-bg-circle {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .avatar-wrap svg {
+      position: relative;
+      z-index: 2;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+    }
+
+    /* Dimension Bars */
+    .dimensions-section {
+      background: rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
+    }
+    .dim-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 10px;
+    }
+    .dim-row:last-child { margin-bottom: 0; }
+    .dim-label-left, .dim-label-right {
+      font-size: 13px;
+      font-weight: 700;
+      min-width: 32px;
+      text-align: center;
+    }
+    .dim-track {
+      flex: 1;
+      position: relative;
+      height: 10px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 5px;
+      overflow: visible;
+    }
+    .dim-marker {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      z-index: 3;
+      border: 3px solid;
+    }
+    .dim-fill {
+      display: none;
+    }
+    .dim-result { font-size: 12px; font-weight: 700; min-width: 52px; text-align: center; }
+
+    /* Radar Chart */
+    .radar-wrap {
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 20px;
+      position: relative;
+      z-index: 1;
+    }
+    .radar-wrap canvas { max-width: 100%; max-height: 100%; }
+
+    /* Result Card */
+    .result-card {
+      background: rgba(255,255,255,0.96);
+      border-radius: 20px;
+      padding: 24px;
+      color: #333;
+      text-align: left;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .result-slogan {
+      font-size: 16px;
+      font-weight: 700;
+      color: #764ba2;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 2px dashed #e0e0e0;
+      text-align: center;
+    }
+    .result-desc {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #555;
+      margin-bottom: 16px;
+    }
+    .result-traits { display: flex; flex-wrap: wrap; gap: 8px; }
+    .trait-tag {
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .rarity {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.25);
+      margin-top: 4px;
+      position: relative;
+      z-index: 1;
+    }
+    .watermark { font-size: 12px; opacity: 0.7; margin-top: 12px; position: relative; z-index: 1; }
+
+    .result-actions {
+      padding: 20px 24px 32px;
+      text-align: center;
+      background: #fff;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 300;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 420px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 24px;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h2 { font-size: 20px; font-weight: 700; }
+    .modal-close {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #f5f5f5;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .types-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .type-cell {
+      text-align: center;
+      padding: 12px 4px;
+      border-radius: 14px;
+      border: 2px solid #f0f0f0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .type-cell:hover { border-color: #667eea; background: #f8f9ff; }
+    .type-cell.active-type {
+      border-color: #667eea;
+      background: linear-gradient(135deg, #f8f9ff 0%, #ede9fe 100%);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+    .type-cell .you-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+    .type-cell .cell-code { font-size: 13px; font-weight: 700; color: #667eea; margin-bottom: 2px; }
+    .type-cell .cell-name { font-size: 11px; color: #666; }
+    .type-cell .cell-avatar { margin-bottom: 6px; }
+    .type-cell .cell-avatar svg { display: block; margin: 0 auto; }
+
+    .type-info-popup {
+      display: none;
+      background: #f8f9ff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+      text-align: center;
+    }
+    .type-info-popup.active { display: block; }
+    .type-info-popup .popup-code { font-size: 18px; font-weight: 700; color: #667eea; margin-bottom: 4px; }
+    .type-info-popup .popup-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .type-info-popup .popup-slogan { font-size: 13px; color: #764ba2; font-weight: 600; margin-bottom: 8px; }
+    .type-info-popup .popup-desc { font-size: 13px; color: #555; line-height: 1.6; }
+
+    /* Export Loading */
+    .export-loading {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 400;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .export-loading.active { display: flex; }
+
+    /* Image Preview Overlay for WeChat/QQ */
+    .img-preview-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 500;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .img-preview-overlay.active { display: flex; }
+    .img-preview-box {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+    .img-preview-box img {
+      width: 100%;
+      border-radius: 12px;
+      display: block;
+    }
+    .img-preview-tip {
+      margin-top: 12px;
+      font-size: 15px;
+      color: #333;
+      font-weight: 600;
+    }
+    .img-preview-sub {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #888;
+    }
+    .img-preview-close {
+      margin-top: 16px;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Intro Screen -->
+    <div class="screen intro-screen active" id="intro-screen">
+      <span class="emoji">🎓</span>
+      <h1>学术人格诊断测试</h1>
+      <p class="subtitle">LBTI · 20题深度诊断</p>
+      <div class="desc">
+        <p>你是否在深夜实验室怀疑过人生？</p>
+        <p>你是否在组会上伪装成一个情绪稳定的成年人？</p>
+        <p style="margin-top:8px"><strong>20道题，测出你的真实学术人格。</strong></p>
+        <p style="margin-top:4px; color:#888; font-size:13px">⚠️ 纯属娱乐，请勿用于开题答辩或求职简历。</p>
+      </div>
+      <div class="type-preview">
+        <span class="type-tag">BOSS</span>
+        <span class="type-tag">FOOD</span>
+        <span class="type-tag">TEAR</span>
+        <span class="type-tag">LUCK</span>
+        <span class="type-tag">VOID</span>
+      </div>
+      <button class="btn" onclick="startQuiz()">开始诊断</button>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div class="screen quiz-screen" id="quiz-screen">
+      <div class="quiz-header">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="progress-text" id="progress-text">1/20</span>
+      </div>
+      <div class="question-text" id="question-text"></div>
+      <div class="options" id="options"></div>
+    </div>
+
+    <!-- Result Screen -->
+    <div class="screen result-screen" id="result-screen">
+      <div id="capture-area">
+        <div class="result-code" id="result-code"></div>
+        <div class="result-name" id="result-name"></div>
+        <div class="result-title" id="result-title"></div>
+        <div class="avatar-wrap" id="avatar-wrap">
+          <div class="avatar-bg-circle"></div>
+        </div>
+
+        <div class="dimensions-section">
+          <div class="dim-row" id="dim-drive">
+            <span class="dim-label-left">卷</span>
+            <div class="dim-track">
+              <div class="dim-fill" id="fill-drive"></div>
+              <div class="dim-marker" id="mark-drive"></div>
+            </div>
+            <span class="dim-label-right">躺</span>
+            <span class="dim-result" id="res-drive"></span>
+          </div>
+          <div class="dim-row" id="dim-emotion">
+            <span class="dim-label-left">佛</span>
+            <div class="dim-track">
+              <div class="dim-fill" id="fill-emotion"></div>
+              <div class="dim-marker" id="mark-emotion"></div>
+            </div>
+            <span class="dim-label-right">焦</span>
+            <span class="dim-result" id="res-emotion"></span>
+          </div>
+          <div class="dim-row" id="dim-advisor">
+            <span class="dim-label-left">贴</span>
+            <div class="dim-track">
+              <div class="dim-fill" id="fill-advisor"></div>
+              <div class="dim-marker" id="mark-advisor"></div>
+            </div>
+            <span class="dim-label-right">离</span>
+            <span class="dim-result" id="res-advisor"></span>
+          </div>
+          <div class="dim-row" id="dim-expression">
+            <span class="dim-label-left">秀</span>
+            <div class="dim-track">
+              <div class="dim-fill" id="fill-expression"></div>
+              <div class="dim-marker" id="mark-expression"></div>
+            </div>
+            <span class="dim-label-right">藏</span>
+            <span class="dim-result" id="res-expression"></span>
+          </div>
+        </div>
+
+        <div class="radar-wrap"><canvas id="radarChart"></canvas></div>
+
+        <div class="result-card">
+          <div class="result-slogan" id="result-slogan"></div>
+          <div class="result-desc" id="result-desc"></div>
+          <div class="result-traits" id="result-traits"></div>
+        </div>
+        <div class="rarity" id="rarity"></div>
+        <div class="watermark">LBTI · 仅供娱乐</div>
+      </div>
+
+      <div class="result-actions">
+        <button class="btn btn-outline" onclick="openTypesModal()">🔍 查看全部 16 种学术人格</button>
+        <button class="btn" onclick="saveResult()" style="margin-top:12px;">📸 保存结果到相册</button>
+        <button class="btn btn-secondary" onclick="restartQuiz()">🔄 再测一次</button>
+        <p class="tip">长按图片也可保存 / 截图分享</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loading-screen">
+    <div class="loading-box">
+      <div class="loading-dots">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+      <div class="loading-text" id="loading-text">正在分析中...</div>
+    </div>
+  </div>
+
+  <!-- Types Modal -->
+  <div class="modal-overlay" id="types-modal-overlay" onclick="closeTypesModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2>学术人格图鉴</h2>
+        <button class="modal-close" onclick="closeTypesModal()">×</button>
+      </div>
+      <div class="types-grid" id="types-grid"></div>
+      <div class="type-info-popup" id="type-info-popup">
+        <div class="popup-code" id="popup-code"></div>
+        <div class="popup-name" id="popup-name"></div>
+        <div class="popup-slogan" id="popup-slogan"></div>
+        <div class="popup-desc" id="popup-desc"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Loading -->
+  <div class="export-loading" id="export-loading"><span>正在生成图片...</span></div>
+
+  <!-- Image Preview Overlay -->
+  <div class="img-preview-overlay" id="img-preview-overlay" onclick="closeImgPreview(event)">
+    <div class="img-preview-box" onclick="event.stopPropagation()">
+      <img id="preview-img" src="" alt="测试结果">
+      <div class="img-preview-tip">👆 长按图片保存到相册</div>
+      <div class="img-preview-sub">若无法保存，可截图分享</div>
+      <button class="img-preview-close" onclick="closeImgPreview()">关 闭</button>
+    </div>
+  </div>
+
+  <script>
+    // ===================== DATA =====================
+
+    const types = {
+      BOSS: {
+        code: 'BOSS', name: '学术卷王', title: '实验室永动机',
+        slogan: '"凌晨两点的灯光，是我加冕的皇冠"',
+        desc: '你是实验室的天选之子，凌晨两点的灯光是你加冕的皇冠。你不仅卷，而且卷得优雅、卷得从容，情绪稳定得像个没有感情的论文机器。导师发来的消息你总是第一个秒回，组会汇报时你的PPT精美得像艺术品，参考文献格式都统一到了标点符号。你热衷于在朋友圈晒出你的数据图和文献笔记，配文永远云淡风轻："随手一算"、"小试牛刀"。导师眼中的你是"这届最靠谱的学生"，同门眼中的你是"那个让人睡不安稳的存在"。你偶尔也觉得自己挺累的，但下一秒就会打开Excel做新的时间规划表。食堂阿姨都认识你，因为你总是错过饭点。你的口头禅是："我觉得还可以再优化一下。" 生存建议：偶尔也给同门留条活路，毕竟毕业答辩时还需要他们给你鼓掌，而且你真的该睡觉了。',
+        traits: ['凌晨战神', 'PPT艺术家', '同门噩梦'],
+        rarity: '史诗物种 ★★★',
+        palette: ['#1a365d','#2c5282','#3182ce','#63b3ed','#bee3f8','#2d3748'],
+        preset: 0
+      },
+      CTRL: {
+        code: 'CTRL', name: '学术曹操', title: '画饼大师',
+        slogan: '"宁教我画天下饼，休教天下饼画我"',
+        desc: '你是实验室的幕后操盘手，表面上不显山不露水，实际上早已把一切都安排得明明白白。你卷，但你卷得低调、卷得深沉，你的工位永远整洁有序，电脑里有八个分类清晰的文件夹。你对导师的每一条指示都心领神会，但你从不发朋友圈炫耀，因为你深知"闷声发大财"的道理。你的开题报告永远充满宏伟蓝图，中期检查时却发现你只是在优化PPT动画。导师觉得你是"有想法、有规划的好苗子"，同门觉得你是"深不可测的神秘人"。你擅长在组会上说出"这个方向未来三年大有可为"然后自己并不做。你的口头禅是："我已经有初步思路了。" 生存建议：画饼虽好，可不要贪杯，毕竟毕业的时候导师会记得你开的每一个空头支票，饼太多会噎着自己。',
+        traits: ['饼学宗师', 'PPT魔术师', '幕后黑手'],
+        rarity: '稀有物种 ★★★',
+        palette: ['#2d1b4e','#4a306d','#7c3aed','#a78bfa','#ddd6fe','#1e1b4b'],
+        preset: 0
+      },
+      HERO: {
+        code: 'HERO', name: '学术孤胆', title: '独狼英雄',
+        slogan: '"一个人，就是一支队伍"',
+        desc: '你是实验室的孤胆英雄，没有导师指导？没关系。同门不给力？更没关系。你一个人就是一个课题组，文献自己找、实验自己设计、论文自己改，最后成果还相当不错。你情绪稳定，遇到问题从不抱怨，只是默默解决然后发一条朋友圈轻描淡写地说"搞定了"。你的存在证明了"放养"其实是最好的培养方式——前提是学生得是你。同门对你的态度从同情变成了崇拜，导师则在朋友圈默默点赞。你很少去办公室，但你的Google Scholar引用在悄悄上涨。你的口头禅是："没事，我自己来。" 生存建议：适当的示弱和求助不是软弱，有时候让导师知道你的存在也是一种生存技能，毕竟签字需要他的手。',
+        traits: ['野生科研者', '自学成才', 'silent killer'],
+        rarity: '传说物种 ★★★★',
+        palette: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#bfdbfe','#1d4ed8'],
+        preset: 0
+      },
+      WOLF: {
+        code: 'WOLF', name: '学术孤儿', title: '放养孤狼',
+        slogan: '"自力更生，丰衣足食"',
+        desc: '你是学术荒野中的孤狼，导师一年出现两次，一次叫开题，一次叫答辩。你早已习惯了在无人区独自求生，文献自己啃、设备自己修、bug自己de。你情绪稳定得近乎麻木，因为你知道抱怨没有用，只有代码和数据不会骗你。你不发朋友圈，不发小红书，你的存在感低到实验室保安都快不认识你了。但你其实默默发了一篇还不错的论文，只是没人知道那是你独立完成的。导师以为你在摸鱼，其实你在暗暗发力。同门觉得你神秘又有点可怜。你的口头禅是："还行。" 生存建议：偶尔去导师面前晃一晃，让他知道你还活着，毕竟毕业签字需要他的手，而不是你的意志力，完全隐身对毕业没有好处。',
+        traits: ['导师幽灵猎人', '野生学术', '隐形人'],
+        rarity: '稀有物种 ★★★',
+        palette: ['#374151','#4b5563','#6b7280','#9ca3af','#d1d5db','#1f2937'],
+        preset: 0
+      },
+      RUSH: {
+        code: 'RUSH', name: '学术鸡血', title: '永动马达',
+        slogan: '"冲冲冲！今天不干完不睡觉！"',
+        desc: '你是一台永动机，全天候高速运转，永远处于"冲冲冲"的状态。你不仅给自己打鸡血，还试图给全实验室打鸡血。你每天第一个到实验室，最后一个离开，中间还要发十条朋友圈记录你的奋斗历程。导师觉得你"很有干劲"，但有时候也被你的密集汇报搞得有点烦。同门看到你的朋友圈就焦虑，看到你本人更焦虑。你其实内心深处也很慌，但你觉得只要动作够快，焦虑就追不上你。你的咖啡摄入量是实验室平均水平的三倍，你的微信步数永远垫底因为你根本不动。你的口头禅是："今天不干完不睡觉！" 生存建议：焦虑和效率不是正比关系，偶尔停下来喘口气，你的心脏和发际线都会感谢你，真的。',
+        traits: ['咖啡因成瘾', '朋友圈战神', '永动机'],
+        rarity: '常见物种 ★★☆',
+        palette: ['#7c2d12','#c2410c','#ea580c','#fb923c','#fed7aa','#9a3412'],
+        preset: 1
+      },
+      MASK: {
+        code: 'MASK', name: '学术伪装', title: '微笑抑郁',
+        slogan: '"我没事，真的。"',
+        desc: '你是实验室的完美伪装者，表面上永远微笑、永远OK、永远"收到"，但你的内心早已在深夜崩溃了一万次。你给自己安排了地狱般的日程表，然后在无人看见的角落独自焦虑。你从不向任何人倾诉，因为你觉得"说出来就是软弱"。导师眼中的你是"情绪稳定、执行力强"的模范生，同门眼中的你是"永远不知道累"的铁人。只有你自己知道，你已经连续三周没有睡好觉了，你的胃药和褪黑素是实验室抽屉里的常客。你的口头禅是："我没事，真的。" 生存建议：面具戴久了会粘在脸上，找个人说说吧，实验室天台的风虽然凉快，但不是用来吹干眼泪的，心理咨询室也不丢人。',
+        traits: ['微笑抑郁', '完美伪装', '深夜崩溃'],
+        rarity: '高危物种 ★★★',
+        palette: ['#312e81','#4338ca','#6366f1','#a5b4fc','#e0e7ff','#1e1b4b'],
+        preset: 1
+      },
+      RAGE: {
+        code: 'RAGE', name: '学术炸药', title: '易燃易爆炸',
+        slogan: '"这什么破系统/破仪器/破审稿人！"',
+        desc: '你是实验室的移动炸药包，一点就着。你对导师不满、对实验不满、对食堂不满、对整个世界都不满，但你选择把这些情绪转化为高产出的论文和愤怒的社交媒体动态。你一边通宵跑数据，一边在朋友圈 rant 学术圈的种种不公。你的效率出奇地高，因为你的愤怒是最好的燃料。同门觉得你有点可怕但也很酷，导师觉得你"很有个性但不太听话"。你的存在让实验室的空气里总是弥漫着一丝紧张感，连空调都躲着你。你的口头禅是："这什么破系统/破仪器/破审稿人！" 生存建议：愤怒确实可以驱动创造力，但请注意别把炸药包点在自己身上，毕业要紧，炸了实验室对你没好处，真的。',
+        traits: ['愤怒燃料', '易燃体质', 'rant 之王'],
+        rarity: '稀有物种 ★★★',
+        palette: ['#7f1d1d','#b91c1c','#dc2626','#f87171','#fecaca','#991b1b'],
+        preset: 1
+      },
+      DEAD: {
+        code: 'DEAD', name: '学术干尸', title: '卷到入土',
+        slogan: '"..."（已说不出话）',
+        desc: '你已经卷到失去了灵魂，变成了一具还在移动的学术干尸。你的眼睛失去了光彩，你的咖啡杯永远半满，你的电脑屏幕永远是同一篇改了三十遍的论文。你不和任何人交流，因为说话也需要能量，而你已经没有能量了。导师以为你在闭关修炼，同门以为你休学了，其实你只是把自己活成了一座孤岛。你的焦虑没有出口，你的努力没有尽头，你在一个无限循环的地狱里独自前行。你的朋友圈停留在三年前。你的口头禅是："..."（你已经说不出话了）。生存建议：立刻、马上、现在，放下手中的鼠标，走出去晒晒太阳。你的论文不会因为这一天不修改而失败，但你的精神状态真的需要急救，立刻马上。',
+        traits: ['灵魂出窍', '能量枯竭', '学术干尸'],
+        rarity: '传说物种 ★★★★',
+        palette: ['#18181b','#27272a','#52525b','#a1a1aa','#e4e4e7','#09090b'],
+        preset: 1
+      },
+      FOOD: {
+        code: 'FOOD', name: '学术猪八戒', title: '会议蝗虫',
+        slogan: '"学术会议是我家，茶歇 buffet 我最爱"',
+        desc: '你对学术的理解是：哪里有学术会议，哪里就有免费自助餐。你的文献阅读止于摘要，你的实验进度止于计划，但你的大众点评收藏夹里有全城所有适合聚餐的餐厅。你和导师关系很好，因为每次组会你都能把气氛搞得热热闹闹，导师觉得你"很有亲和力"。同门爱你，因为你永远知道哪家外卖最好吃、哪家店在打折。你的朋友圈是实验室的美食地图，配图永远精修过。你的工位抽屉就是一个零食仓库，打开能养活半个实验室。你的口头禅是："人是铁饭是钢，吃饱了才有力气搞学术嘛。" 生存建议：热爱美食没有错，但请确保你的毕业论文不是靠吃出来的，以及记得给导师也带一份，这样答辩时他可能会手下留情。',
+        traits: ['茶歇猎人', '自助餐杀手', '实验室食神'],
+        rarity: '常见物种 ★★☆',
+        palette: ['#78350f','#b45309','#d97706','#fbbf24','#fde68a','#92400e'],
+        preset: 2
+      },
+      LUCK: {
+        code: 'LUCK', name: '学术锦鲤', title: '捡漏仙人',
+        slogan: '"啊？这就过了？"',
+        desc: '你是老天爷追着喂饭吃的那种人。你的实验总是莫名其妙成功，你的论文莫名其妙被接收，你的导师莫名其妙对你很满意。你看起来很佛系，每天准时打卡、准时走人，从不通宵，但成果就是比那些熬夜的同门还好。你不爱秀，因为你知道秀多了会遭天谴。导师觉得你"天赋不错、性格也好"，同门觉得你"上辈子拯救了银河系"。你自己也不知道为什么运气这么好，你只是按部就班地做，然后好事就一桩接一桩地来了。你的盲审永远遇不到刁钻专家。你的口头禅是："啊？这就过了？" 生存建议：运气确实是实力的一部分，但请不要在实验室公开说这句话，否则你可能会被群殴，安静地做你的锦鲤就好。',
+        traits: ['天选之子', '概率论漏洞', '躺赢代言人'],
+        rarity: '传说物种 ★★★★',
+        palette: ['#065f46','#059669','#10b981','#34d399','#a7f3d0','#047857'],
+        preset: 2
+      },
+      EASY: {
+        code: 'EASY', name: '学术咸鱼', title: '躺平专家',
+        slogan: '"问题不大。"',
+        desc: '你是一条快乐的咸鱼，躺得平、躺得稳、躺得理直气壮。你不在乎什么影响因子，不在乎什么学术声誉，你只想顺顺利利拿到那张毕业证。虽然你人经常不在实验室，但你的朋友圈永远精彩——健身、摄影、旅行、烘焙，你的研究生生活过得比工作了的人还滋润。导师基本忘了有你这个学生，同门对你的状态从羡慕到习以为常。你相信"车到山前必有路"，而且神奇的是，路确实每次都在你眼前出现了。你的口头禅是："问题不大。" 生存建议：躺平是你的自由，但请确保你的毕业要求确实已经满足了，因为有些学校是真的会卡毕业的，躺之前先看一眼培养方案。',
+        traits: ['躺平专家', '带薪生活', '佛系代表'],
+        rarity: '常见物种 ★★☆',
+        palette: ['#0e7490','#0891b2','#06b6d4','#67e8f9','#cffafe','#155e75'],
+        preset: 2
+      },
+      VOID: {
+        code: 'VOID', name: '学术幽灵', title: '人间蒸发',
+        slogan: '"嗯。"（如果你开口的话）',
+        desc: '你是实验室的传说，一个只存在于打卡记录里的幽灵。你的工位积了灰，你的微信头像从来没有亮过，导师提起你时总要愣三秒才能想起你的名字。你既没有焦虑也没有欲望，你只是——不在。没有人知道你每天在哪里、在做什么、甚至是否还活着。你的同门偶尔会在校园的某个角落偶遇你，然后发出"原来你还在啊"的惊叹。你代表了一种终极的学术虚无主义：存在即合理，不存在也合理。你的毕业论文可能是靠意念完成的。你的口头禅是："嗯。"（如果你开口的话）。生存建议：偶尔出现一下，让导师在毕业材料上签字时能对应上你的脸，彻底消失对毕业没有帮助。',
+        traits: ['人间蒸发', '打卡幽灵', '虚无主义'],
+        rarity: '稀有物种 ★★★',
+        palette: ['#334155','#475569','#64748b','#94a3b8','#cbd5e1','#1e293b'],
+        preset: 2
+      },
+      PUPY: {
+        code: 'PUPY', name: '学术舔狗', title: '导师向日葵',
+        slogan: '"老师您辛苦了！老师说得对！"',
+        desc: '你是导师的专属小狗，24小时待命，消息秒回，任务秒接。你一边焦虑自己能不能毕业，一边疯狂讨好导师，希望能靠真诚打动他给你一些指导或资源。你的朋友圈充满了和导师的聊天记录截图（虽然打了码但大家都知道那是导师），配文永远是"感谢老师指点！"。你帮导师取过快递、修过电脑、占过座位，甚至接过孩子。导师觉得你"挺热心的"，同门觉得你"挺卑微的"。你的焦虑没有因为讨好而减少，反而在每次"已读不回"中层层叠加。你的口头禅是："老师您辛苦了！" 生存建议：舔到最后或许应有尽有，但也可能一无所有，请保留一点尊严，毕竟毕业证上写的是你的名字而不是老师的，自尊也很重要。',
+        traits: ['收到机器', '导师人形挂件', '焦虑讨好'],
+        rarity: '常见物种 ★★☆',
+        palette: ['#86198f','#c026d3','#d946ef','#e879f9','#f5d0fe','#701a75'],
+        preset: 3
+      },
+      TEAR: {
+        code: 'TEAR', name: '学术黛玉', title: '玻璃心人',
+        slogan: '"一朝春尽红颜老，数据花落知多少"',
+        desc: '你是学术界的林黛玉，敏感、脆弱、诗意且内耗。导师的一个标点符号的批注，能让你在床上辗转反侧三天三夜，解读出十八层含义。你的朋友圈是深夜 emo 文学的重要策源地，"一朝春尽红颜老，数据花落知多少"是你的真实写照。你发了论文不会开心，只会觉得"不过是虚名罢了"；你被批评不会愤怒，只会觉得"原是我不配"。导师觉得你"心思细腻"，同门觉得你"需要被保护"。你对待自己的论文就像对待葬花——极尽哀婉又小心翼翼。你的口头禅是："我就知道，终究是这样的结局。" 生存建议：玻璃心虽然美丽但真的很影响睡眠，试着把导师的批注当作标点符号本身，不要当作摩斯密码来破译，放过自己。',
+        traits: ['标点符号解读大师', '葬花人', 'emo文学家'],
+        rarity: '高危物种 ★★★',
+        palette: ['#5b21b6','#7c3aed','#8b5cf6','#c4b5fd','#ede9fe','#4c1d95'],
+        preset: 3
+      },
+      TALK: {
+        code: 'TALK', name: '学术祥林嫂', title: '哭诉循环',
+        slogan: '"我真傻，真的，我单知道..."',
+        desc: '你是实验室的广播电台，你的故事无人不知、无人不晓。你的细胞污染了八次，你的代码报错了三百行，你的导师放了你三次鸽子——这些悲剧你确保实验室的每一个人都听过至少五遍。你热衷于在食堂、走廊、电梯里向任何愿意倾听（甚至不愿意倾听）的人倾诉你的苦难。你其实没有在做太多实际工作，但你的诉苦工作量是实验室第一。同门见到你就想绕道走，食堂阿姨都知道你的实验又失败了。你的口头禅是："我真傻，真的，我单知道..." 生存建议：倾诉是释放压力的好方法，但请考虑一下听众的耳朵和心理承受能力，毕竟你的同门也有自己的实验要崩溃，找个树洞或许更合适。',
+        traits: ['悲剧复读机', '实验室广播站', '情感勒索专家'],
+        rarity: '常见物种 ★★☆',
+        palette: ['#92400e','#b45309','#d97706','#fbbf24','#fde68a','#78350f'],
+        preset: 3
+      },
+      FADE: {
+        code: 'FADE', name: '学术安陵容', title: '冰嬉废人',
+        slogan: '"原是我不配。"',
+        desc: '你是实验室的隐形人，你的存在感淡到仿佛随时会消散在空气里。你既不卷也不闹，你只是安静地焦虑、安静地内耗、安静地觉得自己不配。看到同门发论文，你默默关掉页面开始自我怀疑；导师在群里发言，你反复编辑又删除回复；你有很多话想说，但最后都咽回了肚子里。你的朋友圈空白得像你的实验记录本，你的情绪没有出口，只是在心里一圈圈地打转。导师几乎注意不到你，同门觉得你"好像有点忧郁"。你的口头禅是："原是我不配。" 生存建议：你的存在本身就值得被看见，试着在下次组会上说一句话，任何话，哪怕只是"我觉得这个数据有点问题"——说出来，你就已经赢了一半，你真的配。',
+        traits: ['隐形人', '自我怀疑', '情绪内耗'],
+        rarity: '高危物种 ★★★',
+        palette: ['#4c1d95','#6d28d9','#8b5cf6','#a78bfa','#ddd6fe','#3b0764'],
+        preset: 3
+      }
+    };
+
+    const questions = [
+      { text: '周一睁眼，你想到什么？', options: [
+        { text: '冲！这周干完初稿！', scores: { drive: 1, emotion: 1 } },
+        { text: '又要去实验室，烦', scores: { drive: -1, emotion: -1 } },
+        { text: '组会怎么办，焦虑', scores: { emotion: -1, advisor: 1 } },
+        { text: '无所谓，能毕业就行', scores: { drive: -1, emotion: 1 } }
+      ]},
+      { text: '导师群里@全体，你？', options: [
+        { text: '秒回收到辛苦了', scores: { advisor: 1, expression: 1 } },
+        { text: '等别人先回再跟风', scores: { advisor: -1, expression: -1 } },
+        { text: '半小时后淡淡回好', scores: { advisor: -1, drive: -1 } },
+        { text: '逐字分析是否骂我', scores: { emotion: -1, advisor: 1 } }
+      ]},
+      { text: '学术会议最期待？', options: [
+        { text: '茶歇！自助餐！', scores: { expression: 1, drive: -1 } },
+        { text: '加微信认识大佬', scores: { advisor: 1, expression: 1 } },
+        { text: '学习前沿知识', scores: { drive: 1, emotion: 1 } },
+        { text: '逃离实验室就算赢', scores: { drive: -1, advisor: -1 } }
+      ]},
+      { text: '同门发了SCI，你？', options: [
+        { text: '恭喜完默默自闭', scores: { emotion: -1, expression: -1 } },
+        { text: '查刊定计划追赶', scores: { drive: 1, advisor: 1 } },
+        { text: '关我屁事刷手机', scores: { drive: -1, emotion: 1 } },
+        { text: '转给导师暗示想发', scores: { advisor: 1, expression: 1 } }
+      ]},
+      { text: '实验又失败了，你会？', options: [
+        { text: '哭到食堂全楼皆知', scores: { expression: 1, emotion: -1 } },
+        { text: '默默重做通宵搞', scores: { drive: 1, emotion: 1 } },
+        { text: '算了先吃明天再说', scores: { drive: -1, emotion: 1 } },
+        { text: '怀疑不适合科研', scores: { emotion: -1, drive: -1 } }
+      ]},
+      { text: '工位状态是？', options: [
+        { text: '满墙计划文献表', scores: { drive: 1, advisor: 1 } },
+        { text: '电脑外卖盒零食', scores: { drive: -1, expression: 1 } },
+        { text: '积灰了人不常来', scores: { drive: -1, advisor: -1 } },
+        { text: '绿植便签心已死', scores: { emotion: -1, expression: -1 } }
+      ]},
+      { text: '导师问进度，你？', options: [
+        { text: '汇报得巨细靡遗', scores: { advisor: 1, drive: 1 } },
+        { text: '正在推进中含糊', scores: { advisor: 1, drive: -1 } },
+        { text: '实话实说被训哭', scores: { emotion: -1, advisor: -1 } },
+        { text: '反问老师上次说', scores: { advisor: -1, drive: 1 } }
+      ]},
+      { text: '提到毕业论文，你？', options: [
+        { text: '目录列了三版了', scores: { drive: 1, emotion: 1 } },
+        { text: '能毕业就行求佛', scores: { emotion: 1, drive: -1 } },
+        { text: '焦虑失眠还没写', scores: { emotion: -1, drive: -1 } },
+        { text: '开题画得饼很大', scores: { drive: -1, expression: 1 } }
+      ]},
+      { text: '组会聚餐时，你？', options: [
+        { text: '主动点菜加碗面', scores: { expression: 1, drive: -1 } },
+        { text: '埋头干饭别找我', scores: { expression: -1, drive: -1 } },
+        { text: '聊学术八卦轶事', scores: { expression: 1, advisor: -1 } },
+        { text: '坐角落默念别点我', scores: { emotion: -1, expression: -1 } }
+      ]},
+      { text: '凌晨一点你在？', options: [
+        { text: '跑数据改论文呢', scores: { drive: 1, emotion: 1 } },
+        { text: '刷手机不想睡觉', scores: { drive: -1, emotion: 1 } },
+        { text: '焦虑明天组会事', scores: { emotion: -1, advisor: 1 } },
+        { text: '早已入眠梦香甜', scores: { drive: -1, expression: -1 } }
+      ]},
+      { text: '看到导师来电，你？', options: [
+        { text: '秒接声音充满劲', scores: { advisor: 1, expression: 1 } },
+        { text: '心跳加速深呼吸', scores: { emotion: -1, advisor: 1 } },
+        { text: '等响完再回在忙', scores: { advisor: -1, expression: -1 } },
+        { text: '假装没看到未接', scores: { advisor: -1, drive: -1 } }
+      ]},
+      { text: '文献汇报前夜，你会？', options: [
+        { text: '文献早就读完了', scores: { drive: 1, emotion: 1 } },
+        { text: '现找论文凑页数', scores: { drive: -1, advisor: 1 } },
+        { text: '根本不想打开看', scores: { drive: -1, emotion: -1 } },
+        { text: '读了跟没读一样', scores: { emotion: -1, expression: -1 } }
+      ]},
+      { text: '空调坏了，你？', options: [
+        { text: '联系物业自己搞', scores: { drive: 1, advisor: -1 } },
+        { text: '发群让导师处理', scores: { advisor: 1, drive: -1 } },
+        { text: '算了回家没进度', scores: { drive: -1, emotion: 1 } },
+        { text: '热死正好摸个鱼', scores: { drive: -1, expression: 1 } }
+      ]},
+      { text: '毕业聚餐敬酒词？', options: [
+        { text: '感谢导师悉心培养', scores: { advisor: 1, expression: 1 } },
+        { text: '终于解放哈哈哈', scores: { expression: 1, drive: 1 } },
+        { text: '举杯说不出话来', scores: { expression: -1, emotion: -1 } },
+        { text: '三年其实挺难的', scores: { emotion: -1, expression: 1 } }
+      ]},
+      { text: '同学问你论文进度？', options: [
+        { text: '快写完了就快发', scores: { expression: 1, drive: 1 } },
+        { text: '还没开始但会有', scores: { drive: -1, emotion: 1 } },
+        { text: '反问你的怎么样', scores: { emotion: -1, expression: -1 } },
+        { text: '说了你也不明白', scores: { expression: -1, advisor: -1 } }
+      ]},
+      { text: '放假期间你通常？', options: [
+        { text: '实验室打卡继续', scores: { drive: 1, advisor: 1 } },
+        { text: '彻底消失人间蒸发', scores: { drive: -1, advisor: -1 } },
+        { text: '在家躺平还焦虑', scores: { emotion: -1, drive: -1 } },
+        { text: '旅游但电脑随身', scores: { drive: 1, emotion: 1 } }
+      ]},
+      { text: '导师夸奖了你，你会？', options: [
+        { text: '开心一周朋友圈', scores: { expression: 1, emotion: 1 } },
+        { text: '觉得老师在画饼', scores: { emotion: -1, advisor: 1 } },
+        { text: '表面淡定内心喜', scores: { expression: -1, emotion: 1 } },
+        { text: '担心下次要求更高', scores: { emotion: -1, drive: 1 } }
+      ]},
+      { text: '电脑桌面是？', options: [
+        { text: '文献文件夹满屏', scores: { drive: 1, expression: -1 } },
+        { text: '默认壁纸啥也没', scores: { drive: -1, emotion: 1 } },
+        { text: '励志语录激励自己', scores: { advisor: 1, emotion: -1 } },
+        { text: '爱豆美图心情好', scores: { emotion: 1, drive: -1 } }
+      ]},
+      { text: '听说又要开新课题？', options: [
+        { text: '兴奋又可以发文', scores: { drive: 1, expression: 1 } },
+        { text: '旧的我都没搞完', scores: { emotion: -1, drive: -1 } },
+        { text: '关我事我又不做', scores: { drive: -1, advisor: -1 } },
+        { text: '先观望看谁接手', scores: { expression: -1, emotion: 1 } }
+      ]},
+      { text: '一句话形容研究生？', options: [
+        { text: '吃得苦中苦卷死人', scores: { drive: 1, emotion: 1 } },
+        { text: '人在屋檐下要低头', scores: { advisor: 1, emotion: -1 } },
+        { text: '世事如梦数据凉', scores: { emotion: -1, expression: -1 } },
+        { text: '柳暗花明又一村', scores: { emotion: 1, drive: -1 } }
+      ]}
+    ];
+
+    // ===================== AVATAR GENERATOR =====================
+
+    const avatarPresets = [
+      // Preset 0: Confident upright - round face, neat hair, broad shoulders (BOSS, CTRL, HERO, WOLF)
+      {
+        polygons: [
+          "22,6 50,2 40,20", "50,2 78,6 60,20", "40,20 60,20 50,10",
+          "22,6 40,20 28,45 14,30", "78,6 60,20 72,45 86,30",
+          "40,20 60,20 55,45 45,45",
+          "28,45 45,45 40,68", "72,45 55,45 60,68", "45,45 55,45 60,68 40,68",
+          "40,68 60,68 50,80",
+          "34,36 41,36 38,42", "59,36 66,36 63,42",
+          "45,60 55,60 50,66",
+          "42,80 58,80 50,88",
+          "10,86 50,83 32,100", "50,83 90,86 68,100",
+          "32,100 68,100 50,96"
+        ],
+        colorMap: [0,0,1, 2,2, 3, 3,3,3, 4, 5,5, 1, 4, 4,4,4]
+      },
+      // Preset 1: Angular/tense - spiky hair, sharp jaw, tense shoulders (RUSH, MASK, RAGE, DEAD)
+      {
+        polygons: [
+          "16,4 40,0 35,18", "40,0 62,4 52,18", "62,4 84,8 68,18", "35,18 52,18 45,6",
+          "16,12 35,18 24,42 12,30", "84,12 65,18 76,42 88,30",
+          "35,18 65,18 62,48 38,48",
+          "24,42 38,48 34,74", "76,42 62,48 66,74", "34,74 66,74 50,84",
+          "32,38 40,36 36,44", "60,36 68,38 64,44",
+          "43,68 57,68 50,75",
+          "40,84 60,84 50,90",
+          "12,88 50,82 36,100", "50,82 88,88 64,100",
+          "36,100 64,100 50,95"
+        ],
+        colorMap: [0,0,0,1, 2,2, 3, 3,3, 4, 5,5, 1, 4, 4,4]
+      },
+      // Preset 2: Soft/relaxed - fluffy hair, round face, wide shoulders (FOOD, LUCK, EASY, VOID)
+      {
+        polygons: [
+          "12,12 42,4 36,28", "42,4 72,4 56,28", "72,4 90,18 66,28",
+          "36,28 56,28 46,12",
+          "18,22 36,28 26,55 14,42", "82,22 64,28 74,55 86,42",
+          "36,28 64,28 62,58 38,58",
+          "26,55 38,58 35,78", "74,55 62,58 65,78", "35,78 65,78 50,88",
+          "36,44 43,44 40,50", "57,44 64,44 61,50",
+          "44,72 56,72 50,78",
+          "42,88 58,88 50,94",
+          "6,90 50,86 28,100", "50,86 94,90 72,100",
+          "28,100 72,100 50,97"
+        ],
+        colorMap: [0,0,0,1, 2,2, 3, 3,3, 4, 5,5, 1, 4, 4,4,4]
+      },
+      // Preset 3: Small/vulnerable - quirky hair, delicate face, small shoulders (PUPY, TEAR, TALK, FADE)
+      {
+        polygons: [
+          "18,18 46,5 40,28", "46,5 80,15 58,28", "30,28 58,28 46,14",
+          "22,24 40,28 28,56 18,46", "78,24 60,28 72,56 82,46",
+          "40,28 60,28 58,64 42,64",
+          "28,56 42,64 38,82", "72,56 58,64 62,82",
+          "38,82 62,82 50,92",
+          "34,48 41,48 38,54", "59,48 66,48 63,54",
+          "43,76 57,76 50,82",
+          "42,92 58,92 50,97",
+          "20,92 50,90 38,100", "50,90 80,92 62,100",
+          "38,100 62,100 50,98"
+        ],
+        colorMap: [0,0,1, 2,2, 3, 3,3, 4, 5,5, 1, 4, 4,4]
+      }
+    ];
+
+    function generateAvatar(code, size) {
+      const t = types[code];
+      const preset = avatarPresets[t.preset || 0];
+      const colors = t.palette;
+      const s = size / 100;
+      let svg = `<svg width="${size}" height="${Math.round(size * 1.1)}" viewBox="0 0 100 110" style="overflow:visible">`;
+      // Background glow circle
+      svg += `<circle cx="50" cy="52" r="46" fill="${colors[0]}" opacity="0.15"/>`;
+      // Character polygons
+      preset.polygons.forEach((pts, i) => {
+        const ci = preset.colorMap[i] || 2;
+        svg += `<polygon points="${pts}" fill="${colors[ci]}" opacity="0.93"/>`;
+      });
+      svg += '</svg>';
+      return svg;
+    }
+
+    // ===================== STATE =====================
+
+    let currentQuestion = 0;
+    let scores = { drive: 0, emotion: 0, advisor: 0, expression: 0 };
+    let currentTypeCode = '';
+    let radarChartInstance = null;
+
+    const dimConfig = {
+      drive: { nameA: '卷', nameB: '躺', color: '#667eea' },
+      emotion: { nameA: '佛', nameB: '焦', color: '#48bb78' },
+      advisor: { nameA: '贴', nameB: '离', color: '#ed8936' },
+      expression: { nameA: '秀', nameB: '藏', color: '#e53e3e' }
+    };
+
+    // Compute max possible score per dimension
+    const dimMax = { drive: 0, emotion: 0, advisor: 0, expression: 0 };
+    questions.forEach(q => {
+      q.options.forEach(opt => {
+        for (const dim in opt.scores) {
+          if (opt.scores[dim] > 0) dimMax[dim]++;
+        }
+      });
+    });
+
+    // ===================== QUIZ FLOW =====================
+
+    function startQuiz() {
+      currentQuestion = 0;
+      scores = { drive: 0, emotion: 0, advisor: 0, expression: 0 };
+      document.getElementById('intro-screen').classList.remove('active');
+      document.getElementById('quiz-screen').classList.add('active');
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById('question-text').textContent = q.text;
+      document.getElementById('progress-text').textContent = `${currentQuestion + 1}/${questions.length}`;
+      document.getElementById('progress-fill').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+      const optsDiv = document.getElementById('options');
+      optsDiv.innerHTML = '';
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.textContent = opt.text;
+        btn.onclick = () => selectOption(idx);
+        optsDiv.appendChild(btn);
+      });
+    }
+
+    function selectOption(idx) {
+      const opt = questions[currentQuestion].options[idx];
+      for (const dim in opt.scores) {
+        scores[dim] += opt.scores[dim];
+      }
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
+        const qs = document.getElementById('quiz-screen');
+        qs.style.animation = 'none';
+        qs.offsetHeight;
+        qs.style.animation = '';
+        showQuestion();
+      } else {
+        showLoading();
+      }
+    }
+
+    // ===================== LOADING =====================
+
+    const loadingTexts = [
+      '正在检索你的开题报告...',
+      '正在分析你的导师聊天记录...',
+      '正在计算你的实验室出勤率...',
+      '正在匹配你的深夜 emo 频率...',
+      '正在统计你的奶茶摄入量...',
+      '正在评估你的防窥膜老化程度...',
+      '正在读取你的浏览器历史...',
+      '正在检测你的咖啡因代谢水平...'
+    ];
+
+    function showLoading() {
+      document.getElementById('quiz-screen').classList.remove('active');
+      const ls = document.getElementById('loading-screen');
+      ls.classList.add('active');
+      let idx = 0;
+      const txt = document.getElementById('loading-text');
+      txt.textContent = loadingTexts[0];
+      const interval = setInterval(() => {
+        idx = (idx + 1) % loadingTexts.length;
+        txt.style.opacity = 0;
+        setTimeout(() => {
+          txt.textContent = loadingTexts[idx];
+          txt.style.opacity = 1;
+        }, 200);
+      }, 600);
+      setTimeout(() => {
+        clearInterval(interval);
+        ls.classList.remove('active');
+        showResult();
+      }, 2500);
+    }
+
+    // ===================== RESULT =====================
+
+    function getTypeCode() {
+      const d1 = scores.drive >= 0 ? 'A' : 'P';
+      const d2 = scores.emotion >= 0 ? 'S' : 'A';
+      const d3 = scores.advisor >= 0 ? 'C' : 'D';
+      const d4 = scores.expression >= 0 ? 'E' : 'I';
+      const code = d1 + d2 + d3 + d4;
+      const map = {
+        'ASCE': 'BOSS', 'ASCI': 'CTRL', 'ASDE': 'HERO', 'ASDI': 'WOLF',
+        'AACE': 'RUSH', 'AACI': 'MASK', 'AADE': 'RAGE', 'AADI': 'DEAD',
+        'PSCE': 'FOOD', 'PSCI': 'LUCK', 'PSDE': 'EASY', 'PSDI': 'VOID',
+        'PACE': 'PUPY', 'PACI': 'TEAR', 'PADE': 'TALK', 'PADI': 'FADE'
+      };
+      return map[code] || 'BOSS';
+    }
+
+    function getTendency(dim, score) {
+      const cfg = dimConfig[dim];
+      if (score >= 3) return `极${cfg.nameA}`;
+      if (score > 0) return `偏${cfg.nameA}`;
+      if (score === 0) return '均衡';
+      if (score > -3) return `偏${cfg.nameB}`;
+      return `极${cfg.nameB}`;
+    }
+
+    function showResult() {
+      currentTypeCode = getTypeCode();
+      const t = types[currentTypeCode];
+      document.getElementById('result-screen').classList.add('active');
+
+      document.getElementById('result-code').textContent = t.code;
+      document.getElementById('result-name').textContent = t.name;
+      document.getElementById('result-title').textContent = t.title;
+
+      const wrap = document.getElementById('avatar-wrap');
+      wrap.innerHTML = '<div class="avatar-bg-circle"></div>' + generateAvatar(t.code, 160);
+
+      document.getElementById('result-slogan').textContent = t.slogan;
+      document.getElementById('result-desc').textContent = t.desc;
+      document.getElementById('rarity').textContent = '稀有度：' + t.rarity;
+
+      const traitsDiv = document.getElementById('result-traits');
+      traitsDiv.innerHTML = '';
+      t.traits.forEach(trait => {
+        const span = document.createElement('span');
+        span.className = 'trait-tag';
+        span.textContent = trait;
+        traitsDiv.appendChild(span);
+      });
+
+      // Dimension bars - A极 on LEFT, B极 on RIGHT
+      // Position: 0% = far left (A极), 50% = center, 100% = far right (B极)
+      for (const dim of ['drive', 'emotion', 'advisor', 'expression']) {
+        const score = scores[dim];
+        const max = dimMax[dim] || 1;
+        // Map score to position: +max -> 0% (left/A), -max -> 100% (right/B)
+        const trackPct = Math.max(0, Math.min(100, 50 - (score / max) * 50));
+
+        const marker = document.getElementById('mark-' + dim);
+        marker.style.left = trackPct + '%';
+        marker.style.borderColor = dimConfig[dim].color;
+
+        document.getElementById('res-' + dim).textContent = getTendency(dim, score);
+      }
+
+      // Radar chart
+      setTimeout(() => drawRadarChart(), 100);
+    }
+
+    function drawRadarChart() {
+      const ctx = document.getElementById('radarChart');
+      if (!ctx) return;
+
+      const radarData = ['drive', 'emotion', 'advisor', 'expression'].map(dim => {
+        const max = dimMax[dim] || 1;
+        const raw = scores[dim];
+        return Math.max(0, Math.min(100, ((raw + max) / (2 * max)) * 100));
+      });
+
+      if (radarChartInstance) {
+        radarChartInstance.destroy();
+      }
+
+      radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['卷率', '佛率', '贴率', '秀率'],
+          datasets: [{
+            label: '你的学术人格',
+            data: radarData,
+            backgroundColor: 'rgba(102, 126, 234, 0.25)',
+            borderColor: '#667eea',
+            borderWidth: 2,
+            pointBackgroundColor: '#667eea',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              min: 0,
+              ticks: {
+                display: false
+              },
+              pointLabels: {
+                font: { size: 13, weight: '700' },
+                color: '#fff'
+              },
+              grid: { color: 'rgba(255,255,255,0.2)' },
+              angleLines: { color: 'rgba(255,255,255,0.2)' }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.parsed.r.toFixed(0) + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ===================== SAVE IMAGE =====================
+
+    function saveResult() {
+      const el = document.getElementById('export-loading');
+      el.classList.add('active');
+
+      const radarCanvas = document.getElementById('radarChart');
+      let radarImg = null;
+      let parent = null;
+      if (radarCanvas && radarChartInstance) {
+        radarImg = document.createElement('img');
+        radarImg.src = radarCanvas.toDataURL('image/png');
+        radarImg.style.width = '100%';
+        radarImg.style.height = '100%';
+        radarImg.style.position = 'absolute';
+        radarImg.style.top = '0';
+        radarImg.style.left = '0';
+        parent = radarCanvas.parentNode;
+        parent.style.position = 'relative';
+        parent.appendChild(radarImg);
+        radarCanvas.style.display = 'none';
+      }
+
+      const captureArea = document.getElementById('capture-area');
+      html2canvas(captureArea, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false
+      }).then(canvas => {
+        if (radarImg && parent) {
+          parent.removeChild(radarImg);
+          radarCanvas.style.display = 'block';
+        }
+        el.classList.remove('active');
+
+        const dataUrl = canvas.toDataURL('image/png');
+
+        // Show preview overlay for all browsers (WeChat/QQ need long-press to save)
+        const previewOverlay = document.getElementById('img-preview-overlay');
+        const previewImg = document.getElementById('preview-img');
+        previewImg.src = dataUrl;
+        previewOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Also try auto-download for desktop/Chrome/Safari
+        const link = document.createElement('a');
+        link.download = `LBTI_${types[currentTypeCode].code}_${types[currentTypeCode].name}.png`;
+        link.href = dataUrl;
+        link.click();
+      }).catch(err => {
+        if (radarImg && parent) {
+          parent.removeChild(radarImg);
+          radarCanvas.style.display = 'block';
+        }
+        el.classList.remove('active');
+        alert('生成失败，请直接截图分享~');
+        console.error(err);
+      });
+    }
+
+    function closeImgPreview(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('img-preview-overlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // ===================== ALL TYPES MODAL =====================
+
+    function openTypesModal() {
+      const overlay = document.getElementById('types-modal-overlay');
+      const grid = document.getElementById('types-grid');
+      grid.innerHTML = '';
+
+      const order = ['BOSS','CTRL','HERO','WOLF','RUSH','MASK','RAGE','DEAD','FOOD','LUCK','EASY','VOID','PUPY','TEAR','TALK','FADE'];
+      order.forEach(code => {
+        const t = types[code];
+        const cell = document.createElement('div');
+        cell.className = 'type-cell' + (code === currentTypeCode ? ' active-type' : '');
+        cell.innerHTML = `
+          ${code === currentTypeCode ? '<span class="you-badge">你</span>' : ''}
+          <div class="cell-avatar">${generateAvatar(code, 40)}</div>
+          <div class="cell-code">${t.code}</div>
+          <div class="cell-name">${t.name}</div>
+        `;
+        cell.onclick = () => showTypeInfo(code);
+        grid.appendChild(cell);
+      });
+
+      document.getElementById('type-info-popup').classList.remove('active');
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function showTypeInfo(code) {
+      const t = types[code];
+      document.getElementById('popup-code').textContent = t.code;
+      document.getElementById('popup-name').textContent = t.name + ' · ' + t.title;
+      document.getElementById('popup-slogan').textContent = t.slogan;
+      document.getElementById('popup-desc').textContent = t.desc.substring(0, 120) + '...';
+      document.getElementById('type-info-popup').classList.add('active');
+    }
+
+    function closeTypesModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('types-modal-overlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // ===================== RESTART =====================
+
+    function restartQuiz() {
+      document.getElementById('result-screen').classList.remove('active');
+      document.getElementById('intro-screen').classList.add('active');
+      if (radarChartInstance) {
+        radarChartInstance.destroy();
+        radarChartInstance = null;
+      }
+    }
+  </script>
+</body>
+</html>
